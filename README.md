@@ -2,7 +2,7 @@
 
 TailMount 是一个面向 Tailscale + SSH/SFTP 的 Windows 图形化远程磁盘管理工具。它通过 SSHFS-Win 把服务器目录挂载成盘符，让远程文件可以像本地磁盘一样在文件资源管理器中访问。
 
-当前版本为 Windows 预览版，界面和主要功能已经可以实际使用。
+当前版本为 Windows 预览版，界面和主要功能已经可以实际使用，并提供标准 Windows 安装程序。
 
 ## 功能
 
@@ -26,6 +26,16 @@ TailMount 是一个面向 Tailscale + SSH/SFTP 的 Windows 图形化远程磁盘
 缺少 WinFsp 或 SSHFS-Win 时，可以在应用左下角点击“安装缺少的组件”，也可以用管理员身份运行 `Install-Dependencies.ps1`。
 
 ## 快速开始
+
+### 安装版（推荐）
+
+1. 双击 `TailMount-Setup-0.2.0.exe`。
+2. 按安装向导完成安装；可以选择是否创建桌面快捷方式。
+3. 从开始菜单打开 TailMount。
+
+安装版默认安装到当前用户的 `%LOCALAPPDATA%\Programs\TailMount`，不需要管理员权限，并会出现在 Windows“已安装的应用”中，可正常卸载。
+
+### 便携版
 
 1. 下载或克隆整个项目目录。
 2. 双击 `TailMount.exe`。也可以运行 `启动 TailMount.vbs` 或 `启动 TailMount.cmd`。
@@ -53,13 +63,15 @@ SSHFS-Win 默认使用 `%USERPROFILE%\.ssh\id_rsa`。网络映射模式通常要
 
 ## 配置与隐私
 
-运行数据保存在项目目录的 `data` 文件夹：
+安装版的运行数据保存在 `%LOCALAPPDATA%\TailMount\data`，便携版保存在程序目录的 `data` 文件夹：
 
 - `profiles.json`：服务器配置，不保存 SSH 密码。
 - `profiles.json.bak`：上一次有效配置备份。
 - `TailMount.log`：运行诊断日志，达到约 1 MB 后轮换。
 
 这些文件已被 `.gitignore` 排除，不会在正常 Git 操作中上传。仓库只包含 `examples/profiles.example.json` 示例配置。
+
+安装、升级和卸载程序都不会把服务器配置打入安装包，也不会主动删除个人配置。若确实需要彻底清理，可在卸载后手动删除 `%LOCALAPPDATA%\TailMount`。
 
 ## 从源码构建
 
@@ -71,6 +83,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build.ps1
 
 构建脚本使用 Windows 自带的 .NET Framework C# 编译器生成 `TailMount.exe`。该 EXE 是轻量启动器，运行时仍需和 `TailMount.ps1` 放在同一目录。
 
+生成 Windows 安装包需要安装 Inno Setup 6，然后运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-Installer.ps1
+```
+
+输出文件位于 `dist\TailMount-Setup-0.2.0.exe`。
+
 ## 项目结构
 
 ```text
@@ -79,6 +99,10 @@ TailMount/
 ├─ TailMount.Launcher.cs       # 无控制台窗口启动器源码
 ├─ TailMount.exe               # 已编译启动器
 ├─ Build.ps1                   # 启动器构建脚本
+├─ Build-Installer.ps1         # Windows 安装包构建脚本
+├─ Create-Icon.ps1             # 应用图标生成脚本
+├─ assets/                     # 应用图标
+├─ installer/                  # Inno Setup 安装脚本
 ├─ Install-Dependencies.ps1    # WinFsp / SSHFS-Win 安装脚本
 ├─ examples/                   # 无隐私信息的示例配置
 └─ data/                       # 本地运行数据，Git 默认忽略
@@ -89,4 +113,5 @@ TailMount/
 - SSHFS-Win 对 Linux 权限、符号链接和文件锁的表现与 NTFS 不完全相同。
 - 不建议通过 SSHFS 直接运行数据库、虚拟机或 Docker 数据目录。
 - SSH 用户名和密码是否正确，只能在真正挂载时由 SSHFS-Win 完成验证。
-- 当前版本尚未提供 MSI 安装包、自动更新和代码签名。
+- 当前安装包尚未进行商业代码签名，因此首次运行时 Windows 可能显示“未知发布者”；请核对下载来源和 SHA-256。
+- 当前版本尚未提供自动更新。

@@ -5,6 +5,15 @@ using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Threading;
 using System.Windows.Forms;
+using System.Reflection;
+
+[assembly: AssemblyTitle("TailMount")]
+[assembly: AssemblyProduct("TailMount")]
+[assembly: AssemblyDescription("Tailscale SFTP Drive Manager")]
+[assembly: AssemblyCompany("MMMHT")]
+[assembly: AssemblyCopyright("Copyright © 2026 MMMHT")]
+[assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyFileVersion("0.2.0.0")]
 
 internal static class TailMountLauncher
 {
@@ -39,6 +48,14 @@ internal static class TailMountLauncher
                 }
 
                 Environment.SetEnvironmentVariable("TAILMOUNT_APPROOT", appDirectory);
+                if (File.Exists(Path.Combine(appDirectory, "installed.marker")))
+                {
+                    string dataDirectory = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "TailMount",
+                        "data");
+                    Environment.SetEnvironmentVariable("TAILMOUNT_DATAROOT", dataDirectory);
+                }
 
                 using (Runspace runspace = RunspaceFactory.CreateRunspace())
                 {

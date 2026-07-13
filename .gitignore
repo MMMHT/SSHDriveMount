@@ -16,3 +16,6 @@ data/*
 Thumbs.db
 Desktop.ini
 
+# Locally built installer packages
+dist/*
+!dist/.gitkeep

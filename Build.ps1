@@ -10,6 +10,7 @@ if ($PSVersionTable.PSEdition -eq 'Core') {
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sourcePath = Join-Path $projectRoot 'TailMount.Launcher.cs'
 $outputPath = Join-Path $projectRoot 'TailMount.exe'
+$iconPath = Join-Path $projectRoot 'assets\TailMount.ico'
 
 if (-not (Test-Path -LiteralPath $sourcePath)) {
     throw "找不到启动器源码：$sourcePath"
@@ -25,11 +26,21 @@ if (-not $compiler) {
 }
 
 $automationAssembly = [System.Management.Automation.PowerShell].Assembly.Location
-& $compiler /nologo /target:winexe /optimize+ /platform:anycpu `
-    /reference:System.Windows.Forms.dll `
-    /reference:$automationAssembly `
-    /out:$outputPath `
-    $sourcePath
+$compilerArguments = @(
+    '/nologo',
+    '/target:winexe',
+    '/optimize+',
+    '/platform:anycpu',
+    '/reference:System.Windows.Forms.dll',
+    "/reference:$automationAssembly",
+    "/out:$outputPath"
+)
+if (Test-Path -LiteralPath $iconPath) {
+    $compilerArguments += "/win32icon:$iconPath"
+}
+$compilerArguments += $sourcePath
+
+& $compiler $compilerArguments
 
 if ($LASTEXITCODE -ne 0) {
     throw "启动器编译失败，退出代码：$LASTEXITCODE"

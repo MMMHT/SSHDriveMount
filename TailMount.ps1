@@ -212,7 +212,7 @@ namespace TailMount
 }
 
 $script:AppRoot = if ($env:TAILMOUNT_APPROOT) { $env:TAILMOUNT_APPROOT } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-$script:DataRoot = Join-Path $script:AppRoot 'data'
+$script:DataRoot = if ($env:TAILMOUNT_DATAROOT) { $env:TAILMOUNT_DATAROOT } else { Join-Path $script:AppRoot 'data' }
 $script:ConfigPath = Join-Path $script:DataRoot 'profiles.json'
 $script:BackupConfigPath = "$($script:ConfigPath).bak"
 $script:LogPath = Join-Path $script:DataRoot 'TailMount.log'
