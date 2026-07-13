@@ -1,0 +1,18 @@
+# TailMount runtime data (may contain server addresses and usernames)
+data/*
+!data/.gitkeep
+
+# Local diagnostics and recovery files
+*.log
+*.log.1
+*.bak
+*.tmp
+
+# Editor / OS files
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+Desktop.ini
+

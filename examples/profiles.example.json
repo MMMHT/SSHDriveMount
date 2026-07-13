@@ -1,0 +1,14 @@
+[
+  {
+    "Id": "00000000000000000000000000000001",
+    "Name": "示例服务器",
+    "Host": "my-server.example.ts.net",
+    "Port": 22,
+    "UserName": "your-user",
+    "RemotePath": "/home/your-user",
+    "DriveLetter": "S",
+    "AuthMode": "Password",
+    "Persist": true,
+    "Notes": ""
+  }
+]
