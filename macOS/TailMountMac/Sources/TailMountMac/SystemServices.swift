@@ -19,9 +19,13 @@ enum ExecutableLocator {
 
     static var tailscale: String? {
         first([
+            // Prefer the real app executable. The GUI installer creates a
+            // lowercase /usr/local/bin/tailscale symlink; on macOS 15.7 that
+            // launch path can make Tailscale 1.98 mis-detect its bundle and
+            // abort before producing a ping result.
+            "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
             "/usr/local/bin/tailscale",
-            "/opt/homebrew/bin/tailscale",
-            "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+            "/opt/homebrew/bin/tailscale"
         ])
     }
 }
