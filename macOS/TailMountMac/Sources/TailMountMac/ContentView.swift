@@ -209,7 +209,7 @@ private struct ProfileDetail: View {
                         .font(.system(size: 28)).foregroundStyle(model.isMounted ? TailTheme.success : TailTheme.accent)
                 }.frame(width: 60, height: 60)
                 Text(model.isMounted ? "远程磁盘已就绪" : "准备挂载").font(.title2.bold())
-                Text(model.isMounted ? "已连接到 \(draft.resolvedMountFolder)" : "测试连接后，将服务器目录显示为 Finder 磁盘。")
+                Text(model.isMounted ? "已连接到 \(draft.resolvedMountFolder)" : "先验证 Tailscale 与 SSH 端口，再将服务器目录显示为 Finder 磁盘。")
                     .font(.callout).foregroundStyle(TailTheme.muted).fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: 5) {
                     Text("挂载预览").font(.caption).foregroundStyle(TailTheme.muted)
@@ -220,7 +220,7 @@ private struct ProfileDetail: View {
                     Task { await model.mount(profile: draft, password: password) }
                 }.buttonStyle(PrimaryButtonStyle()).disabled(model.isBusy || !model.dependencyState.isReady)
                 HStack {
-                    Button("测试连接") { Task { await model.testConnection(profile: draft) } }.buttonStyle(.bordered).disabled(model.isBusy)
+                    Button("测试网络与 SSH 端口") { Task { await model.testConnection(profile: draft) } }.buttonStyle(.bordered).disabled(model.isBusy)
                     Button("卸载") { Task { await model.unmount(profile: draft) } }.buttonStyle(.bordered).disabled(!model.isMounted || model.isBusy)
                 }.frame(maxWidth: .infinity)
                 Button("在 Finder 中打开") { SSHFSService.openInFinder(draft) }
@@ -259,7 +259,12 @@ private struct ProfileDetail: View {
     private var activityCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                HStack { Text("活动记录").font(.headline); Spacer(); Button("清空") { model.clearActivities() }.buttonStyle(.plain).font(.caption) }
+                HStack {
+                    Text("活动记录").font(.headline)
+                    Spacer()
+                    Button("复制诊断") { model.copyActivities() }.buttonStyle(.plain).font(.caption)
+                    Button("清空") { model.clearActivities() }.buttonStyle(.plain).font(.caption)
+                }
                 if model.activities.isEmpty {
                     Text("暂无记录").foregroundStyle(TailTheme.muted).frame(maxWidth: .infinity, minHeight: 110)
                 } else {
@@ -269,13 +274,24 @@ private struct ProfileDetail: View {
                                 HStack(alignment: .top, spacing: 8) {
                                     Circle().fill(activityColor(entry.level)).frame(width: 7, height: 7).padding(.top, 5)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(entry.message).font(.caption).fixedSize(horizontal: false, vertical: true)
+                                        Text(entry.message).font(.caption).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                                        if let details = entry.details, !details.isEmpty {
+                                            DisclosureGroup("查看诊断详情") {
+                                                Text(details)
+                                                    .font(.system(.caption2, design: .monospaced))
+                                                    .foregroundStyle(TailTheme.muted)
+                                                    .textSelection(.enabled)
+                                                    .padding(.top, 4)
+                                            }
+                                            .font(.caption2)
+                                            .foregroundStyle(TailTheme.accent)
+                                        }
                                         Text(entry.date, style: .time).font(.caption2).foregroundStyle(TailTheme.muted)
                                     }
                                 }
                             }
                         }
-                    }.frame(height: 180)
+                    }.frame(height: 240)
                 }
             }
         }

@@ -54,6 +54,20 @@ struct ProbeSample: Identifiable {
     let date = Date()
     let latencyMS: Double?
     let succeeded: Bool
+    let tailscaleLatencyMS: Double?
+    let sshLatencyMS: Double?
+
+    init(
+        latencyMS: Double?,
+        succeeded: Bool,
+        tailscaleLatencyMS: Double? = nil,
+        sshLatencyMS: Double? = nil
+    ) {
+        self.latencyMS = latencyMS
+        self.succeeded = succeeded
+        self.tailscaleLatencyMS = tailscaleLatencyMS
+        self.sshLatencyMS = sshLatencyMS
+    }
 }
 
 struct ActivityEntry: Identifiable {
@@ -61,7 +75,20 @@ struct ActivityEntry: Identifiable {
     let date = Date()
     let message: String
     let level: Level
-    enum Level { case info, success, warning, error }
+    let details: String?
+
+    enum Level {
+        case info, success, warning, error
+
+        var label: String {
+            switch self {
+            case .info: "信息"
+            case .success: "成功"
+            case .warning: "警告"
+            case .error: "错误"
+            }
+        }
+    }
 }
 
 struct DependencyState {
