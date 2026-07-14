@@ -172,7 +172,7 @@ final class AppModel: ObservableObject {
     }
 
     func log(_ message: String, _ level: ActivityEntry.Level = .info) {
-        activities.insert(ActivityEntry(date: Date(), message: message, level: level), at: 0)
+        activities.insert(ActivityEntry(message: message, level: level), at: 0)
         if activities.count > 100 { activities.removeLast(activities.count - 100) }
     }
 
