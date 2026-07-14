@@ -118,6 +118,10 @@ private struct ProfileDetail: View {
     init(model: AppModel, profile: ServerProfile) {
         self.model = model
         _draft = State(initialValue: profile)
+        let savedPassword = profile.rememberPassword
+            ? ((try? KeychainStore.password(profileID: profile.id)) ?? nil)
+            : nil
+        _password = State(initialValue: savedPassword ?? "")
     }
 
     var body: some View {
@@ -141,9 +145,6 @@ private struct ProfileDetail: View {
         .confirmationDialog("删除“\(draft.name)”？", isPresented: $showDeleteConfirmation) {
             Button("删除配置", role: .destructive) { model.store.deleteSelected() }
         } message: { Text("服务器信息和保存在 Keychain 中的密码都会删除。") }
-        .onAppear {
-            password = model.password
-        }
     }
 
     private var header: some View {

@@ -6,7 +6,6 @@ final class AppModel: ObservableObject {
     static let shared = AppModel()
 
     let store = ProfileStore()
-    @Published var password = ""
     @Published var dependencyState = DependencyService.inspect()
     @Published var isMounted = false
     @Published var isBusy = false
@@ -31,13 +30,9 @@ final class AppModel: ObservableObject {
     var selectedProfile: ServerProfile? { store.selected }
 
     func profileSelectionChanged() {
-        password = ""
         samples = []
         quality = .idle
         latencyMS = nil
-        if let profile = selectedProfile, profile.rememberPassword {
-            password = (try? KeychainStore.password(profileID: profile.id)) ?? ""
-        }
         Task { await refreshMountState() }
     }
 
