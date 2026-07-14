@@ -27,6 +27,6 @@ if ($LASTEXITCODE -ne 0) {
     throw "安装包构建失败，退出代码：$LASTEXITCODE"
 }
 
-$installer = Get-Item (Join-Path $projectRoot 'dist\TailMount-Setup-0.2.0.exe')
+$installer = Get-Item (Join-Path $projectRoot 'dist\TailMount-Setup-0.3.0.exe')
 Write-Host "安装包构建完成：$($installer.FullName)" -ForegroundColor Green
 Write-Host "文件大小：$($installer.Length) bytes"

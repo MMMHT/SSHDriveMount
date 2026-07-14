@@ -5,5 +5,9 @@
 *.cs text eol=crlf
 *.md text eol=lf
 *.json text eol=lf
+*.swift text eol=lf
+*.sh text eol=lf
+*.command text eol=lf
+*.plist text eol=lf
+*.yml text eol=lf
 *.exe binary
-

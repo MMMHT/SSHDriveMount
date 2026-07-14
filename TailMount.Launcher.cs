@@ -12,8 +12,8 @@ using System.Reflection;
 [assembly: AssemblyDescription("Tailscale SFTP Drive Manager")]
 [assembly: AssemblyCompany("MMMHT")]
 [assembly: AssemblyCopyright("Copyright © 2026 MMMHT")]
-[assembly: AssemblyVersion("0.2.0.0")]
-[assembly: AssemblyFileVersion("0.2.0.0")]
+[assembly: AssemblyVersion("0.3.0.0")]
+[assembly: AssemblyFileVersion("0.3.0.0")]
 
 internal static class TailMountLauncher
 {
@@ -25,16 +25,31 @@ internal static class TailMountLauncher
         {
             if (!createdNew)
             {
-                MessageBox.Show(
-                    "TailMount 已在运行，请切换到现有窗口。",
-                    "TailMount",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                try
+                {
+                    using (EventWaitHandle activationEvent = EventWaitHandle.OpenExisting(@"Local\TailMount.ShowWindow"))
+                    {
+                        activationEvent.Set();
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show(
+                        "TailMount 已在运行，请单击系统托盘图标打开。",
+                        "TailMount",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
                 return;
             }
 
             try
             {
+                using (EventWaitHandle activationEvent = new EventWaitHandle(
+                    false,
+                    EventResetMode.AutoReset,
+                    @"Local\TailMount.ShowWindow"))
+                {
                 string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
                 string scriptPath = Path.Combine(appDirectory, "TailMount.ps1");
                 if (!File.Exists(scriptPath))
@@ -80,6 +95,7 @@ internal static class TailMountLauncher
                             throw new InvalidOperationException(details);
                         }
                     }
+                }
                 }
             }
             catch (Exception exception)

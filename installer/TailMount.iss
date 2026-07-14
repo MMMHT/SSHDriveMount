@@ -1,5 +1,5 @@
 #define MyAppName "TailMount"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.3.0"
 #define MyAppPublisher "MMMHT"
 #define MyAppURL "https://github.com/MMMHT/SSHDriveMount"
 #define MyAppExeName "TailMount.exe"

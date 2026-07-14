@@ -7,6 +7,8 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Xaml
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 if (-not ('TailMount.NativeMethods' -as [type])) {
     Add-Type -TypeDefinition @"
@@ -1331,6 +1333,7 @@ function Update-DriveState {
         $OpenDriveButton.IsEnabled = $true
         $UnmountButton.IsEnabled = $true
         if ($script:NextDriveProbeAt -eq [datetime]::MinValue) { $script:NextDriveProbeAt = [datetime]::Now }
+        if ($script:TrayIcon) { $script:TrayIcon.Text = "TailMount - $letter`: 已挂载" }
     }
     else {
         Set-GlobalStatus '等待连接' 'Idle'
@@ -1349,6 +1352,7 @@ function Update-DriveState {
         $script:DriveProbeStartedAt = [datetime]::MinValue
         $script:NextDriveProbeAt = [datetime]::MinValue
         Set-HealthAlert 'Drive' '' 'None'
+        if ($script:TrayIcon) { $script:TrayIcon.Text = 'TailMount - 等待连接' }
     }
 }
 
@@ -1734,6 +1738,104 @@ $HealthMonitorTimer.Add_Tick({
 $ProfileList.ItemsSource = $script:Profiles
 $ProfileList.SelectedIndex = 0
 
+$script:IsExplicitExit = $false
+$script:HasShownTrayHint = $false
+$script:TrayIcon = New-Object System.Windows.Forms.NotifyIcon
+$script:TrayMenu = New-Object System.Windows.Forms.ContextMenuStrip
+$script:TrayOpenItem = New-Object System.Windows.Forms.ToolStripMenuItem '打开 TailMount'
+$script:TrayDriveItem = New-Object System.Windows.Forms.ToolStripMenuItem '打开已挂载磁盘'
+$script:TrayExitItem = New-Object System.Windows.Forms.ToolStripMenuItem '退出 TailMount'
+$script:TrayOpenItem.Font = New-Object System.Drawing.Font($script:TrayOpenItem.Font, [System.Drawing.FontStyle]::Bold)
+[void]$script:TrayMenu.Items.Add($script:TrayOpenItem)
+[void]$script:TrayMenu.Items.Add($script:TrayDriveItem)
+[void]$script:TrayMenu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
+[void]$script:TrayMenu.Items.Add($script:TrayExitItem)
+$script:TrayIcon.ContextMenuStrip = $script:TrayMenu
+$script:TrayIcon.Text = 'TailMount - 等待连接'
+
+$trayIconPath = Join-Path $script:AppRoot 'assets\TailMount.ico'
+try {
+    if (Test-Path -LiteralPath $trayIconPath) {
+        $script:TrayIcon.Icon = New-Object System.Drawing.Icon($trayIconPath)
+    }
+    else {
+        $script:TrayIcon.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
+    }
+}
+catch {
+    $script:TrayIcon.Icon = [System.Drawing.SystemIcons]::Application
+}
+$script:TrayIcon.Visible = $true
+
+function Show-TailMountWindow {
+    $window.Dispatcher.BeginInvoke([action]{
+        try {
+            $window.ShowInTaskbar = $true
+            $window.WindowState = 'Normal'
+            $window.Show()
+            $window.Activate() | Out-Null
+            $window.Topmost = $true
+            $window.Topmost = $false
+            $window.Focus() | Out-Null
+        }
+        catch {
+            try { Add-Log "无法恢复主窗口：$($_.Exception.Message)" 'Error' } catch { }
+        }
+    }) | Out-Null
+}
+
+function Hide-TailMountToTray {
+    $window.Hide()
+    $window.ShowInTaskbar = $false
+    if (-not $script:HasShownTrayHint) {
+        $script:HasShownTrayHint = $true
+        $script:TrayIcon.BalloonTipTitle = 'TailMount 仍在后台运行'
+        $script:TrayIcon.BalloonTipText = '单击右下角图标可以重新打开；右键图标可退出程序。'
+        $script:TrayIcon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
+        $script:TrayIcon.ShowBalloonTip(3500)
+    }
+}
+
+function Open-SelectedMountedDrive {
+    $letter = Get-DriveLetter
+    if ($letter -and (Test-DriveMounted)) {
+        Start-Process explorer.exe -ArgumentList "$letter`:\"
+    }
+    else {
+        $script:TrayIcon.BalloonTipTitle = '远程磁盘未挂载'
+        $script:TrayIcon.BalloonTipText = '请先打开 TailMount 并挂载远程磁盘。'
+        $script:TrayIcon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Warning
+        $script:TrayIcon.ShowBalloonTip(3000)
+        Show-TailMountWindow
+    }
+}
+
+$script:TrayOpenItem.Add_Click({ Show-TailMountWindow })
+$script:TrayDriveItem.Add_Click({ Open-SelectedMountedDrive })
+$script:TrayExitItem.Add_Click({
+    $script:IsExplicitExit = $true
+    $window.Dispatcher.BeginInvoke([action]{ $window.Close() }) | Out-Null
+})
+$script:TrayIcon.Add_MouseClick({
+    param($sender, $eventArgs)
+    if ($eventArgs.Button -eq [System.Windows.Forms.MouseButtons]::Left) { Show-TailMountWindow }
+})
+$script:TrayMenu.Add_Opening({
+    $letter = Get-DriveLetter
+    $mounted = $letter -and (Test-DriveMounted)
+    $script:TrayDriveItem.Enabled = [bool]$mounted
+    $script:TrayDriveItem.Text = if ($mounted) { "打开 $letter`: 远程磁盘" } else { '打开已挂载磁盘（未挂载）' }
+})
+
+$script:ActivationEvent = $null
+$script:ActivationTimer = New-Object Windows.Threading.DispatcherTimer
+$script:ActivationTimer.Interval = [TimeSpan]::FromMilliseconds(400)
+try { $script:ActivationEvent = [Threading.EventWaitHandle]::OpenExisting('Local\TailMount.ShowWindow') } catch { }
+$script:ActivationTimer.Add_Tick({
+    if ($script:ActivationEvent -and $script:ActivationEvent.WaitOne(0)) { Show-TailMountWindow }
+})
+$script:ActivationTimer.Start()
+
 $TitleBar.Add_MouseLeftButtonDown({
     param($sender, $eventArgs)
     if ($eventArgs.ClickCount -eq 2) {
@@ -1745,7 +1847,7 @@ $TitleBar.Add_MouseLeftButtonDown({
 })
 $MinimizeButton.Add_Click({ $window.WindowState = 'Minimized' })
 $MaximizeButton.Add_Click({ if ($window.WindowState -eq 'Maximized') { $window.WindowState = 'Normal' } else { $window.WindowState = 'Maximized' } })
-$CloseButton.Add_Click({ $window.Close() })
+$CloseButton.Add_Click({ Hide-TailMountToTray })
 
 $ProfileList.Add_SelectionChanged({
     if (-not $script:IsLoadingProfile) { Show-SelectedProfile; Reset-NetworkMonitor }
@@ -1839,11 +1941,22 @@ $InstallDependenciesButton.Add_Click({
 })
 
 $window.Add_Closing({
+    param($sender, $eventArgs)
+    if (-not $script:IsExplicitExit) {
+        $eventArgs.Cancel = $true
+        Hide-TailMountToTray
+        return
+    }
     try {
         $HealthMonitorTimer.Stop()
         $MountOperationTimer.Stop()
+        $script:ActivationTimer.Stop()
         Capture-SelectedProfile | Out-Null
         Export-TailMountProfiles
+        $script:TrayIcon.Visible = $false
+        $script:TrayIcon.Dispose()
+        $script:TrayMenu.Dispose()
+        if ($script:ActivationEvent) { $script:ActivationEvent.Dispose() }
     }
     catch { }
 })

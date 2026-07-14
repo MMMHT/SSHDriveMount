@@ -1,0 +1,40 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "macOS/**"
+      - ".github/workflows/build-macos.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15-intel
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build Intel app and DMG
+        working-directory: macOS/TailMountMac
+        run: |
+          chmod +x scripts/*.sh scripts/*.command
+          ./scripts/build-dmg.sh
+
+      - name: Verify bundle
+        working-directory: macOS/TailMountMac
+        run: |
+          codesign --verify --deep --strict dist/TailMount.app
+          file dist/TailMount.app/Contents/MacOS/TailMountMac
+          file dist/TailMount.app/Contents/MacOS/TailMountMac | grep x86_64
+          plutil -lint dist/TailMount.app/Contents/Info.plist
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v7
+        with:
+          name: TailMount-macOS-0.1.0
+          path: macOS/TailMountMac/dist/TailMount-macOS-0.1.0.dmg
+          if-no-files-found: error

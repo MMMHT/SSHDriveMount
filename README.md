@@ -1,5 +1,7 @@
 # TailMount for Windows
 
+> macOS 原生版本源码位于 [`macOS/TailMountMac`](macOS/TailMountMac)，包含 SwiftUI 应用、菜单栏驻留、Keychain、连接质量监测和 DMG 构建脚本。
+
 TailMount 是一个面向 Tailscale + SSH/SFTP 的 Windows 图形化远程磁盘管理工具。它通过 SSHFS-Win 把服务器目录挂载成盘符，让远程文件可以像本地磁盘一样在文件资源管理器中访问。
 
 当前版本为 Windows 预览版，界面和主要功能已经可以实际使用，并提供标准 Windows 安装程序。
@@ -12,6 +14,7 @@ TailMount 是一个面向 Tailscale + SSH/SFTP 的 Windows 图形化远程磁盘
 - 测试 SSH 端口、挂载、重新挂载、卸载和打开远程磁盘。
 - 自动检测 Tailscale、WinFsp 与 SSHFS-Win 运行环境。
 - 后台监测网络延时、近期稳定性和远程目录响应时间。
+- 关闭主窗口后驻留 Windows 系统托盘，单击托盘图标即可恢复，右键可打开远程磁盘或彻底退出。
 - 网络抖动快速复查，连续失败后才判定离线。
 - 配置原子保存、自动备份、损坏恢复和持久诊断日志。
 - 单实例运行，避免多个窗口同时写入配置。
