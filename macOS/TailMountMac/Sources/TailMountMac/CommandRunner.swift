@@ -24,7 +24,13 @@ enum CommandRunner {
         process.standardOutput = output
         process.standardError = errorPipe
         if input != nil { process.standardInput = standardInput }
-        process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }
+        var childEnvironment = ProcessInfo.processInfo.environment
+        // GUI applications export their own bundle identifier. Command-line
+        // helpers such as the Tailscale app binary can mis-detect their launch
+        // mode when that identifier is inherited by the child process.
+        childEnvironment.removeValue(forKey: "__CFBundleIdentifier")
+        childEnvironment.merge(environment) { _, new in new }
+        process.environment = childEnvironment
 
         return try await withCheckedThrowingContinuation { continuation in
             let lock = NSLock()

@@ -128,7 +128,11 @@ enum NetworkProbeService {
            let result = try? await CommandRunner.run(
                 tailscale,
                 arguments: ["ping", "--c", "1", "--timeout=3s", profile.host],
-                environment: ["TAILSCALE_BE_CLI": "1"],
+                environment: [
+                    "TAILSCALE_BE_CLI": "1",
+                    "SHLVL": "1",
+                    "TERM": "xterm-256color"
+                ],
                 timeout: 5
            ), result.exitCode == 0 {
             return ProbeSample(latencyMS: parseLatency(result.combinedOutput), succeeded: true)
